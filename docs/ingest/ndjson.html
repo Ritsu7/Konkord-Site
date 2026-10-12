@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konkord &mdash; NDJSON ingestion</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel-2: #243049; --text: #e2e8f0; --muted: #94a3b8;
+    --accent: #6366f1; --accent-2: #818cf8; --border: #334155; --code: #0b1120;
+    --pass: #22c55e; --warn: #f59e0b; --fail: #ef4444;
+    --glow-1: #1e2a4a;
+  }
+  html[data-theme="light"] {
+    --bg: #f8fafc; --panel: #ffffff; --panel-2: #f1f5f9; --text: #0f172a; --muted: #5b6885;
+    --accent: #6366f1; --accent-2: #4f46e5; --border: #e1e6f0; --code: #eef1f8;
+    --pass: #15803d; --warn: #b45309; --fail: #b91c1c;
+    --glow-1: #eef2ff;
+  }
+  html[data-theme="light"] body { color: #1e293b; }
+  html[data-theme="light"] p, html[data-theme="light"] li { color: #334155; }
+  html[data-theme="light"] pre code, html[data-theme="light"] code { color: #4f46e5; }
+  .theme-toggle {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text); width: 30px; height: 30px;
+    border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    font-size: 0.85rem; line-height: 1; margin: 0.4rem 0 0.8rem; transition: border-color 0.15s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent-2); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text); font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 10% -10%, var(--glow-1) 0%, var(--bg) 60%);
+  }
+  .layout { display: flex; min-height: 100vh; }
+  nav {
+    width: 240px; flex: 0 0 240px; padding: 1.5rem 1rem; border-right: 1px solid var(--border);
+    position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto;
+  }
+  nav .brand { font-weight: 700; font-size: 1.05rem; margin-bottom: 1rem; }
+  nav .brand .tag { color: var(--accent-2); }
+  nav a { display: block; color: var(--muted); text-decoration: none; padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.85rem; }
+  nav a:hover { color: var(--text); background: var(--panel-2); }
+  nav a.active { color: var(--text); background: var(--panel-2); font-weight: 600; }
+  main { flex: 1; padding: 2rem 3rem 4rem; max-width: 900px; }
+  h1 { margin-top: 0; font-size: 1.8rem; letter-spacing: -0.02em; }
+  h2 { margin-top: 2.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); font-size: 1.3rem; }
+  h3 { font-size: 1.05rem; color: var(--accent-2); }
+  p, li { line-height: 1.6; color: #cbd5e1; }
+  code { background: var(--code); color: #a5b4fc; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.88em; }
+  pre {
+    background: var(--code); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.2rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: #e2e8f0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; }
+  .pill { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+  .pill.post { background: rgba(99,102,241,0.18); color: var(--accent-2); }
+  .pill.get { background: rgba(34,197,94,0.18); color: var(--pass); }
+  .note {
+    background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.88rem;
+  }
+  .warn { border-left-color: var(--warn); }
+  a.inline { color: var(--accent-2); }
+  .topic-nav { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.88rem; }
+  .topic-nav a { color: var(--accent-2); text-decoration: none; }
+  .topic-nav a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<script>
+  (function () {
+    var saved = localStorage.getItem("konkord-theme");
+    if (saved === "light") document.documentElement.setAttribute("data-theme", "light");
+  })();
+</script>
+
+<div class="layout">
+<nav>
+  <div class="brand"><span class="tag">Konkord</span> Docs</div>
+  <a href="overview.html">Overview</a>
+  <a href="source-formats.html">Source formats (HL7v2)</a>
+  <a href="target-formats.html">Target formats (FHIR)</a>
+  <a href="ndjson.html" class="active">NDJSON ingestion</a>
+  <a href="methods.html">Ingestion methods</a>
+  <a href="correlation.html">Correlation &amp; trend detection</a>
+  <a href="errors.html">Error handling</a>
+  <a href="limits.html">Limits &amp; disclaimers</a>
+  <a href="../api/index.html">&rarr; Library &amp; CLI reference</a>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle light/dark theme">&#9789;</button>
+</nav>
+<main>
+  <h1>NDJSON ingestion</h1>
+
+  <p>Konkord accepts NDJSON target files anywhere a FHIR Bundle is accepted: the CLI's <code>--target</code>
+     argument, or a path passed to <code>konkord.adapters.fhir.load_fhir_bundle()</code> in library code.
+     Each non-blank line must be a
+     standalone JSON object (typically a FHIR resource); Konkord wraps the parsed lines into an in-memory
+     <code>Bundle</code> of <code>type: collection</code> before handing it to the same reconciliation code
+     path used for a single-document <code>.json</code> Bundle &mdash; there is no behavioral difference
+     between the two once parsed.</p>
+  <pre><code>{"resourceType": "Patient", "id": "pat-synth002", "name": [{"family": "Example"}]}
+{"resourceType": "Encounter", "id": "enc-visit002", "subject": {"reference": "Patient/pat-synth002"}}
+{"resourceType": "Observation", "id": "obs-glucose", "subject": {"reference": "Patient/pat-synth002"}}</code></pre>
+  <div class="note">
+    Which format Konkord expects is decided purely by the <strong>file extension</strong>
+    (<code>.ndjson</code>/<code>.ndjsonl</code> vs. anything else treated as single-document JSON) &mdash;
+    this is the <code>--target</code> path on the CLI, or the path passed to <code>load_fhir_bundle()</code>
+    in library code.
+  </div>
+  <div class="note warn">
+    A malformed line raises a <code>422</code> naming the 1-based line number, e.g.
+    <code>"invalid NDJSON on line 3: Expecting value: line 1 column 1 (char 0)"</code>.
+  </div>
+
+  <div class="topic-nav"><span><a href="target-formats.html">&larr; Target formats (FHIR)</a></span><span><a href="methods.html">Ingestion methods &rarr;</a></span></div>
+</main>
+</div>
+<script>
+  (function () {
+    var btn = document.getElementById("theme-toggle");
+    function sync() {
+      var isLight = document.documentElement.getAttribute("data-theme") === "light";
+      if (btn) btn.innerHTML = isLight ? "&#9728;&#65039;" : "&#9789;";
+    }
+    sync();
+    if (btn) {
+      btn.addEventListener("click", function () {
+        var isLight = document.documentElement.getAttribute("data-theme") === "light";
+        if (isLight) {
+          document.documentElement.removeAttribute("data-theme");
+          localStorage.setItem("konkord-theme", "dark");
+        } else {
+          document.documentElement.setAttribute("data-theme", "light");
+          localStorage.setItem("konkord-theme", "light");
+        }
+        sync();
+      });
+    }
+  })();
+</script>
+</body>
+</html>

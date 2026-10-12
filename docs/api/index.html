@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konkord &mdash; Library &amp; CLI reference</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel-2: #243049; --text: #e2e8f0; --muted: #94a3b8;
+    --accent: #6366f1; --accent-2: #818cf8; --border: #334155; --code: #0b1120;
+    --pass: #22c55e; --warn: #f59e0b; --fail: #ef4444;
+    --glow-1: #1e2a4a;
+  }
+  html[data-theme="light"] {
+    --bg: #f8fafc; --panel: #ffffff; --panel-2: #f1f5f9; --text: #0f172a; --muted: #5b6885;
+    --accent: #6366f1; --accent-2: #4f46e5; --border: #e1e6f0; --code: #eef1f8;
+    --pass: #15803d; --warn: #b45309; --fail: #b91c1c;
+    --glow-1: #eef2ff;
+  }
+  html[data-theme="light"] body { color: #1e293b; }
+  html[data-theme="light"] p, html[data-theme="light"] li { color: #334155; }
+  html[data-theme="light"] pre code, html[data-theme="light"] code { color: #4f46e5; }
+  .theme-toggle {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text); width: 30px; height: 30px;
+    border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    font-size: 0.85rem; line-height: 1; margin: 0.4rem 0 0.8rem; transition: border-color 0.15s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent-2); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text); font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 10% -10%, var(--glow-1) 0%, var(--bg) 60%);
+  }
+  .layout { display: flex; min-height: 100vh; }
+  nav.side {
+    width: 240px; flex: 0 0 240px; padding: 1.5rem 1rem; border-right: 1px solid var(--border);
+    position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto;
+  }
+  nav.side .brand { font-weight: 700; font-size: 1.05rem; margin-bottom: 1rem; }
+  nav.side .brand .tag { color: var(--accent-2); }
+  nav.side a { display: block; color: var(--muted); text-decoration: none; padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.85rem; }
+  nav.side a:hover { color: var(--text); background: var(--panel-2); }
+  nav.side a.active { color: var(--text); background: var(--panel-2); font-weight: 600; }
+  main { flex: 1; padding: 2rem 3rem 4rem; max-width: 980px; }
+  h1 { margin-top: 0; font-size: 1.8rem; letter-spacing: -0.02em; }
+  p { line-height: 1.6; color: #cbd5e1; }
+  code { background: var(--code); color: #a5b4fc; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.88em; }
+  .pill { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+  .pill.cli { background: rgba(99,102,241,0.18); color: var(--accent-2); }
+  .pill.lib { background: rgba(34,197,94,0.18); color: var(--pass); }
+
+  /* --- Endpoint tab strip --- */
+  .ep-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.5rem 0 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  .ep-tab {
+    background: var(--panel); border: 1px solid var(--border); color: var(--muted); font-family: inherit;
+    font-size: 0.82rem; font-weight: 600; padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .ep-tab:hover { color: var(--text); border-color: var(--accent-2); }
+  .ep-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .ep-panel { display: none; }
+  .ep-panel.active { display: block; }
+  .ep-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .ep-path { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 0.98rem; }
+  .ep-desc { margin-bottom: 1.2rem; }
+
+  /* --- Language code tabs --- */
+  .code-card { background: var(--code); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1.3rem; }
+  .code-tabbar { display: flex; gap: 0.2rem; background: var(--panel); border-bottom: 1px solid var(--border); padding: 0.4rem 0.5rem; }
+  .code-tab {
+    background: transparent; border: none; color: var(--muted); font-family: inherit; font-size: 0.78rem;
+    font-weight: 600; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .code-tab:hover { color: var(--text); }
+  .code-tab.active { background: var(--panel-2); color: var(--accent-2); }
+  .code-body { position: relative; }
+  .code-lang { display: none; }
+  .code-lang.active { display: block; }
+  pre { margin: 0; padding: 1rem 1.2rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.55; }
+  pre code { background: none; padding: 0; color: #e2e8f0; }
+  .resp-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 0.4rem; }
+</style>
+</head>
+<body>
+<script>
+  (function () {
+    var saved = localStorage.getItem("konkord-theme");
+    if (saved === "light") document.documentElement.setAttribute("data-theme", "light");
+  })();
+</script>
+
+<div class="layout">
+<nav class="side">
+  <div class="brand"><span class="tag">Konkord</span> Docs</div>
+  <a href="../ingest/overview.html">Overview</a>
+  <a href="../ingest/source-formats.html">Source formats (HL7v2)</a>
+  <a href="../ingest/target-formats.html">Target formats (FHIR)</a>
+  <a href="../ingest/ndjson.html">NDJSON ingestion</a>
+  <a href="../ingest/methods.html">Ingestion methods</a>
+  <a href="../ingest/correlation.html">Correlation &amp; trend detection</a>
+  <a href="../ingest/errors.html">Error handling</a>
+  <a href="../ingest/limits.html">Limits &amp; disclaimers</a>
+  <a href="index.html" class="active">Library &amp; CLI reference</a>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle light/dark theme">&#9789;</button>
+</nav>
+<main>
+  <h1>Library &amp; CLI reference</h1>
+  <p>Konkord is a pure Python library and CLI &mdash; <code>pip install konkord-health</code>. There is no
+     REST API, no server process, and no Swagger/ReDoc UI. Pick a command below, then pick CLI or Python
+     to see the equivalent way to run it.</p>
+
+  <div class="ep-tabs" id="ep-tabs"></div>
+  <div id="ep-panels"></div>
+</main>
+</div>
+
+<script>
+(function () {
+  var bash = {
+    name: "CLI",
+    render: function (ep) { return ep.cli; }
+  };
+  var python = {
+    name: "Python",
+    render: function (ep) { return ep.python; }
+  };
+  var langs = [bash, python];
+
+  var endpoints = [
+    {
+      key: "compare", kind: "cli", path: "konkord compare",
+      desc: "Parse an HL7v2 ORU^R01 source message and a FHIR R4B Bundle/Observation target, run the matching rule packs, and print a JSON report. Exits 1 on overall FAIL.",
+      cli: 'pip install "konkord-health[hl7]"\n\n' +
+           'konkord compare --source examples/lab.hl7 --target examples/observation-good.json\n' +
+           'konkord compare --source examples/panel.hl7 --target examples/panel-bundle-good.json --report report.json',
+      python: 'from konkord.adapters.hl7v2 import parse_hl7_oru\n' +
+              'from konkord.adapters.fhir import load_fhir_bundle\n' +
+              'from konkord.reconciliation import compare_many\n\n' +
+              'source = parse_hl7_oru(open("panel.hl7").read())\n' +
+              'target = load_fhir_bundle("panel-bundle-good.json")\n' +
+              'report = compare_many(source, target)\n' +
+              'print(report["overall"])  # PASS | FAIL | WARN | INDETERMINATE',
+      resp: '{\n  "overall": "FAIL",\n  "checks": [\n    {"check": "value", "status": "FAIL", "detail": "source=4.2 target=4.8"}\n  ]\n}'
+    },
+    {
+      key: "compare-save", kind: "cli", path: "konkord compare --save",
+      desc: "Same as compare, but also persists the report as a job (requires the optional db extra). Defaults to a local sqlite:///./konkord.db unless KONKORD_DATABASE_URL or --postgres-connection-string is set.",
+      cli: 'pip install "konkord-health[db,hl7]"\n\n' +
+           'export KONKORD_DATABASE_URL="postgresql+psycopg://konkord:konkord@localhost:5432/konkord"\n' +
+           'konkord compare --source panel.hl7 --target panel-bundle-good.json \\\n' +
+           '  --save --correlation-id pipeline-123',
+      python: 'from konkord.db import init_db, save_job_report, SessionLocal\n\n' +
+              'init_db()\n' +
+              'db = SessionLocal()\n' +
+              'job = save_job_report(db, report, correlation_id="pipeline-123")\n' +
+              'print(job.id)',
+      resp: 'Saved as job_id=3f9c1e2a (check with: konkord status --job-id 3f9c1e2a)'
+    },
+    {
+      key: "jobs", kind: "cli", path: "konkord jobs",
+      desc: "List recently persisted reconciliation jobs. Requires the optional db extra.",
+      cli: 'konkord jobs --limit 20',
+      python: 'from konkord.db import init_db, list_jobs, SessionLocal\n\n' +
+              'init_db()\n' +
+              'db = SessionLocal()\n' +
+              'jobs = list_jobs(db, limit=20)',
+      resp: '[\n  {"job_id": "3f9c1e2a", "created_at": "2026-10-01T12:03:00Z", "overall": "WARN", "correlation_id": "pipeline-123"}\n]'
+    },
+    {
+      key: "status", kind: "cli", path: "konkord status",
+      desc: "Show a persisted job's status and any FAIL/WARN issues found. Requires the optional db extra.",
+      cli: 'konkord status --job-id 3f9c1e2a',
+      python: 'from konkord.db import init_db, get_job, SessionLocal\n' +
+              'from konkord.db.repository import job_to_report\n\n' +
+              'init_db()\n' +
+              'db = SessionLocal()\n' +
+              'report = job_to_report(get_job(db, "3f9c1e2a"))',
+      resp: 'job_id:         3f9c1e2a\ncreated_at:     2026-10-01T12:03:00Z\ncorrelation_id: pipeline-123\noverall:        WARN\n\nissues found (1):\n[...]'
+    }
+  ];
+
+  var tabsEl = document.getElementById("ep-tabs");
+  var panelsEl = document.getElementById("ep-panels");
+
+  endpoints.forEach(function (ep, i) {
+    var tab = document.createElement("button");
+    tab.className = "ep-tab" + (i === 0 ? " active" : "");
+    tab.textContent = ep.path;
+    tab.addEventListener("click", function () { showEndpoint(ep.key); });
+    tabsEl.appendChild(tab);
+
+    var panel = document.createElement("div");
+    panel.className = "ep-panel" + (i === 0 ? " active" : "");
+    panel.id = "panel-" + ep.key;
+    panel.innerHTML =
+      '<div class="ep-head"><span class="pill ' + ep.kind + '">' + ep.kind.toUpperCase() + '</span>' +
+      '<span class="ep-path">' + ep.path + '</span></div>' +
+      '<p class="ep-desc">' + ep.desc + '</p>' +
+      '<div class="code-card">' +
+        '<div class="code-tabbar" id="lang-tabs-' + ep.key + '"></div>' +
+        '<div class="code-body" id="lang-body-' + ep.key + '"></div>' +
+      '</div>' +
+      '<p class="resp-label">Example response</p>' +
+      '<div class="code-card"><div class="code-body"><pre><code>' + escapeHtml(ep.resp) + '</code></pre></div></div>';
+    panelsEl.appendChild(panel);
+
+    var langTabs = panel.querySelector("#lang-tabs-" + ep.key);
+    var langBody = panel.querySelector("#lang-body-" + ep.key);
+    langs.forEach(function (lang, j) {
+      var lt = document.createElement("button");
+      lt.className = "code-tab" + (j === 0 ? " active" : "");
+      lt.textContent = lang.name;
+      lt.addEventListener("click", function () { showLang(ep.key, lang.name); });
+      langTabs.appendChild(lt);
+
+      var body = document.createElement("div");
+      body.className = "code-lang" + (j === 0 ? " active" : "");
+      body.id = "lang-" + ep.key + "-" + lang.name;
+      body.innerHTML = "<pre><code>" + escapeHtml(lang.render(ep)) + "</code></pre>";
+      langBody.appendChild(body);
+    });
+  });
+
+  function showEndpoint(key) {
+    document.querySelectorAll(".ep-tab").forEach(function (t) { t.classList.remove("active"); });
+    document.querySelectorAll(".ep-panel").forEach(function (p) { p.classList.remove("active"); });
+    Array.prototype.forEach.call(tabsEl.children, function (t, i) {
+      if (endpoints[i].key === key) t.classList.add("active");
+    });
+    document.getElementById("panel-" + key).classList.add("active");
+  }
+
+  function showLang(epKey, langName) {
+    var panel = document.getElementById("panel-" + epKey);
+    panel.querySelectorAll(".code-tab").forEach(function (t) {
+      t.classList.toggle("active", t.textContent === langName);
+    });
+    panel.querySelectorAll(".code-lang").forEach(function (b) {
+      b.classList.toggle("active", b.id === "lang-" + epKey + "-" + langName);
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+})();
+</script>
+<script>
+  (function () {
+    var btn = document.getElementById("theme-toggle");
+    function sync() {
+      var isLight = document.documentElement.getAttribute("data-theme") === "light";
+      if (btn) btn.innerHTML = isLight ? "&#9728;&#65039;" : "&#9789;";
+    }
+    sync();
+    if (btn) {
+      btn.addEventListener("click", function () {
+        var isLight = document.documentElement.getAttribute("data-theme") === "light";
+        if (isLight) {
+          document.documentElement.removeAttribute("data-theme");
+          localStorage.setItem("konkord-theme", "dark");
+        } else {
+          document.documentElement.setAttribute("data-theme", "light");
+          localStorage.setItem("konkord-theme", "light");
+        }
+        sync();
+      });
+    }
+  })();
+</script>
+</body>
+</html>
